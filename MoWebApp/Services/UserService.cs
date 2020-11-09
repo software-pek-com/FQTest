@@ -68,6 +68,8 @@ namespace MoWebApp.Services
         {
             var queryable = GetUserQueryable();
 
+            // Assuming filter conditions are or'd as most reasonable.
+            // Any other filtering would have to be defined at the requirements level.
             var results = queryable.Where(u =>
                 (!string.IsNullOrEmpty(filter.FirstName) && u.FirstName.StartsWith(filter.FirstName))
                 || (!string.IsNullOrEmpty(filter.LastName) && u.LastName.StartsWith(filter.LastName))
