@@ -1,32 +1,33 @@
 ﻿using System;
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace MoWebApp.Models
+namespace MoWebApp.Data
 {
     /// <summary>
-    /// Represents audit properties of a <see cref="UserDocument"/>.
+    /// Represents audit properties of a <see cref="User"/>.
     /// </summary>
-    public class AuditElement
+    public class Audit
     {
         /// <summary>
-        /// Returns the creation date.
+        /// Gets the creation date.
         /// </summary>
         [BsonRequired]
         public DateTime CreationDate { get; set; }
 
         /// <summary>
-        /// Returns the user who created this data.
+        /// Gets the user who created this user.
         /// </summary>
         [BsonRequired]
         public string CreationUser { get; set; }
 
         /// <summary>
-        /// Returns the last update date.
+        /// Gets the last update date.
+        /// Null if data has not been changed since <see cref="CreationDate"/>.
         /// </summary>
-        public DateTime LastUpdateDate { get; set; }
+        public DateTime? LastUpdateDate { get; set; }
 
         /// <summary>
-        /// Returns the user who last updated this data.
+        /// Gets the user who last updated this user.
         /// </summary>
 
         public string LastUpdateUser { get; set; }

@@ -1,20 +1,20 @@
-using Microsoft.Extensions.Logging;
-using MoWebApp.Controllers;
-using NUnit.Framework;
-using Moq;
 using System;
+using Moq;
+using MoWebApp.Controllers;
+using MoWebApp.Services;
+using NUnit.Framework;
 
 namespace Tests.MoWebApp.Controllers
 {
     public class UserControllerTests
     {
-        private Mock<ILogger<UserController>> loggerMock;
+        private Mock<IUserService> userServiceMock;
 
         #region Helpers
 
         private UserController CreateTarget()
         {
-            return new UserController(loggerMock.Object);
+            return new UserController(userServiceMock.Object);
         }
 
         #endregion
@@ -22,7 +22,7 @@ namespace Tests.MoWebApp.Controllers
         [SetUp]
         public void Setup()
         {
-            loggerMock = new Mock<ILogger<UserController>>();
+            userServiceMock = new Mock<IUserService>();
         }
 
         [Test]

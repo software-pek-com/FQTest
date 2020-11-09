@@ -6,7 +6,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using Moq;
-using MoWebApp.Models;
+using MoWebApp.Data;
 using MoWebApp.Services;
 using NUnit.Framework;
 
@@ -17,8 +17,8 @@ namespace Tests.Services
         private Mock<IMongoClient> clientMock;
         private Mock<ILogger<ConfigureMongoDbIndexesService>> loggerMock;
         private Mock<IMongoDatabase> databaseMock = new Mock<IMongoDatabase>();
-        private Mock<IMongoCollection<UserDocument>> collectionMock = new Mock<IMongoCollection<UserDocument>>();
-        private Mock<IMongoIndexManager<UserDocument>> indexManagerMock = new Mock<IMongoIndexManager<UserDocument>>();
+        private Mock<IMongoCollection<User>> collectionMock = new Mock<IMongoCollection<User>>();
+        private Mock<IMongoIndexManager<User>> indexManagerMock = new Mock<IMongoIndexManager<User>>();
 
         #region Helpers
 
@@ -58,15 +58,15 @@ namespace Tests.Services
             loggerMock = new Mock<ILogger<ConfigureMongoDbIndexesService>>();
             
             databaseMock = new Mock<IMongoDatabase>();
-            collectionMock = new Mock<IMongoCollection<UserDocument>>();
-            indexManagerMock = new Mock<IMongoIndexManager<UserDocument>>();
+            collectionMock = new Mock<IMongoCollection<User>>();
+            indexManagerMock = new Mock<IMongoIndexManager<User>>();
 
             clientMock
                 .Setup(s => s.GetDatabase(It.IsAny<string>(), null))
                 .Returns(databaseMock.Object);
 
             databaseMock
-                .Setup(s => s.GetCollection<UserDocument>(nameof(UserDocument), null))
+                .Setup(s => s.GetCollection<User>(nameof(User), null))
                 .Returns(collectionMock.Object);
 
             collectionMock
@@ -74,7 +74,7 @@ namespace Tests.Services
                 .Returns(indexManagerMock.Object);
 
             indexManagerMock
-                .Setup(s => s.CreateOneAsync(It.IsAny<CreateIndexModel<UserDocument>>(), null, CancellationToken.None))
+                .Setup(s => s.CreateOneAsync(It.IsAny<CreateIndexModel<User>>(), null, CancellationToken.None))
                 .Returns(Task.FromResult("OK"));
         }
 
@@ -118,10 +118,10 @@ namespace Tests.Services
 
             clientMock.Verify(s => s.GetDatabase(It.IsAny<string>(), null), Times.Once);
             databaseMock.Verify(
-                s => s.GetCollection<UserDocument>(nameof(UserDocument), null), Times.Once);
+                s => s.GetCollection<User>(nameof(User), null), Times.Once);
             collectionMock.VerifyGet(s => s.Indexes, Times.Once);
             indexManagerMock.Verify(
-                s => s.CreateOneAsync(It.IsAny<CreateIndexModel<UserDocument>>(), null, CancellationToken.None),
+                s => s.CreateOneAsync(It.IsAny<CreateIndexModel<User>>(), null, CancellationToken.None),
                 Times.Once);
         }
     }

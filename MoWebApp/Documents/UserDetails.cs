@@ -1,30 +1,18 @@
 ﻿using System;
-using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace MoWebApp.Models
+namespace MoWebApp.Documents
 {
     /// <summary>
-    /// Represents user properties.
+    /// Represents user details.
     /// </summary>
-    public class UserDocument
+    public class UserDetails
     {
-        /// <summary>
-        /// Creates an instance of this class.
-        /// </summary>
-        public UserDocument()
-        {
-            Audit = new AuditElement();
-        }
-
         /// <summary>
         /// Returns the id.
         /// </summary>
-        [BsonId]
-        [BsonRepresentation(BsonType.ObjectId)]
         public string Id { get; set; }
 
-        [BsonRequired]
         /// <summary>
         /// Returns the first name.
         /// </summary>
@@ -33,7 +21,6 @@ namespace MoWebApp.Models
         /// <summary>
         /// Returns the last name.
         /// </summary>
-        [BsonRequired]
         public string LastName { get; set; }
 
         /// <summary>
@@ -49,7 +36,7 @@ namespace MoWebApp.Models
         /// Details of how to use the preferable <see cref="DateTimeOffset"/> in MongoDB queries
         /// are <see cref="https://stackoverflow.com/questions/10480127/mongodb-and-datetimeoffset-type">here</see>.
         /// </remarks>
-        public DateTime Birthdate { get; set; }
+        public DateTime? Birthdate { get; set; }
 
         /// <summary>
         /// Returns the password.
@@ -60,14 +47,9 @@ namespace MoWebApp.Models
         public string Password { get; set; }
 
         /// <summary>
-        /// Returns the audit element.
+        /// Gets the <see cref="DateTime"/> of user's last connection.
+        /// Returns null if user has never connected.
         /// </summary>
-        [BsonRequired]
-        public AuditElement Audit { get; set; }
-
-        /// <summary>
-        /// Returns the <see cref="DateTime"/> of the last connection.
-        /// </summary>
-        public DateTime LastConnectionDate { get; set; }
+        public DateTime? LastConnectionDate { get; set; }
     }
 }

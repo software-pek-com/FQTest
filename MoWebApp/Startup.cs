@@ -1,15 +1,8 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using MoWebApp.Services;
 
@@ -27,12 +20,11 @@ namespace MoWebApp
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddSingleton<IMongoClient>(new MongoClient(Configuration["Database:ConnectionString"]));
+            services.AddSingleton<IHostedService, ConfigureMongoDbIndexesService>();
+            services.AddSingleton<IUserService, UserService>();
+
             services.AddControllers();
-
-            var mongoClient = new MongoClient(Configuration["Database:ConnectionString"]);
-
-            services.AddSingleton<IMongoClient>(mongoClient);
-            services.AddHostedService<ConfigureMongoDbIndexesService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
