@@ -7,17 +7,19 @@ using NUnit.Framework;
 
 namespace Tests.Services
 {
-    public class UserServiceTests
+    public class UserServiceTests : TestBase
     {
         private Mock<IMongoClient> clientMock;
         private Mock<IMongoDatabase> databaseMock;
         private Mock<IMongoCollection<User>> collectionMock;
 
+        public UserServiceTests() { }
+
         #region Helpers
 
         private UserService CreateTarget()
         {
-            return new UserService(clientMock.Object);
+            return new UserService(clientMock.Object, Mapper);
         }
 
         #endregion
@@ -48,10 +50,23 @@ namespace Tests.Services
 
 
         [Test]
+        public void UserService_Cannot_Construct_With_Null_Client_And_Null_Mapper()
+        {
+            Assert.Throws<ArgumentNullException>(() => new UserService(null, null));
+        }
+
+        [Test]
         public void UserService_Cannot_Construct_With_Null_Client()
         {
-            Assert.Throws<ArgumentNullException>(() => new UserService(null));
+            Assert.Throws<ArgumentNullException>(() => new UserService(null, Mapper));
         }
+
+        [Test]
+        public void UserService_Cannot_Construct_With_Null_Mapper()
+        {
+            Assert.Throws<ArgumentNullException>(() => new UserService(clientMock.Object, null));
+        }
+
 
         #region IUserService
 

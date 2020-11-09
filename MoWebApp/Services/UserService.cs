@@ -1,7 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.Linq;
+using AutoMapper;
+using Microsoft.AspNetCore.Mvc;
+using MongoDB.Bson;
 using MongoDB.Driver;
+using MongoDB.Driver.Linq;
 using MoWebApp.Core;
 using MoWebApp.Data;
 using MoWebApp.Documents;
@@ -14,15 +19,18 @@ namespace MoWebApp.Services
     public class UserService : IUserService
     {
         private readonly IMongoClient client;
+        private readonly IMapper mapper;
 
         /// <summary>
         /// Creates an instance of this class.
         /// </summary>
-        public UserService(IMongoClient client)
+        public UserService(IMongoClient client, IMapper mapper)
         {
             Guard.ArgumentNotNull(client, nameof(client));
+            Guard.ArgumentNotNull(mapper, nameof(mapper));
 
             this.client = client;
+            this.mapper = mapper;
         }
 
         /// <summary>
@@ -30,21 +38,24 @@ namespace MoWebApp.Services
         /// </summary>
         public IEnumerable<User> GetAll()
         {
-            var databaseName = (string)ConfigurationManager.GetSection("Database:Name");
-            var database = client.GetDatabase(databaseName);
-
-            var collection = database.GetCollection<User>(nameof(User));
-            var users = collection.Find(_ => true);
-
-            return users.ToEnumerable();
+            var queryable = GetUserQueryable();
+            return queryable.Where(_ => true).ToList();
         }
 
         /// <summary>
-        /// Returns all <see cref="IEnumerable<UserDocument>">users</see>.
+        /// Returns the <see cref="UserDetails">user</see> with the <paramref name="id"/>.
         /// </summary>
-        public IEnumerable<UserDetails> GetById(string id)
+        public UserDetails GetById(string id)
         {
-            throw new NotImplementedException();
+            var queryable = GetUserQueryable();
+            var user = queryable.Where(u => u.Id == id).ToList().FirstOrDefault();
+
+            if (user == null)
+            {
+                return null;
+            }
+
+            return mapper.Map<UserDetails>(user);
         }
 
         /// <summary>
@@ -52,7 +63,41 @@ namespace MoWebApp.Services
         /// </summary>
         public IEnumerable<UserSummary> Find(UserSearchFilter filter, UserSearchOrderBy orderBy)
         {
-            throw new NotImplementedException();
+            var queryable = GetUserQueryable();
+
+            var results = queryable.Where(u =>
+                !string.IsNullOrEmpty(filter.FirstName) && u.FirstName.StartsWith(filter.FirstName)
+                || !string.IsNullOrEmpty(filter.LastName) && u.LastName.StartsWith(filter.LastName)
+                || filter.HasUserEverConnected && u.LastConnectionDate == null
+                );
+
+            if (orderBy.LastConnectionDate)
+            {
+                results.OrderBy(u => u.LastConnectionDate);
+            }
+            if (orderBy.CreationDate)
+            {
+                results.OrderBy(u => u.Audit.CreationDate);
+            }
+            if (orderBy.LastName)
+            {
+                results.OrderBy(u => u.LastName);
+            }
+
+            var summary = results.Select(r => mapper.Map<UserSummary>(r));
+            return summary;
         }
+
+        #region Private
+
+        private IMongoQueryable<User> GetUserQueryable()
+        {
+            var databaseName = (string)ConfigurationManager.GetSection("Database:Name");
+            var database = client.GetDatabase(databaseName);
+
+            return database.GetCollection<User>(nameof(User)).AsQueryable();
+        }
+
+        #endregion
     }
 }

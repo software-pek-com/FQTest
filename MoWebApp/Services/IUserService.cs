@@ -17,7 +17,7 @@ namespace MoWebApp.Services
         /// <summary>
         /// Returns all <see cref="IEnumerable<UserDocument>">users</see>.
         /// </summary>
-        IEnumerable<UserDetails> GetById(string id);
+        UserDetails GetById(string id);
 
         /// <summary>
         /// Returns all <see cref="IEnumerable<UserDocument>">users</see> matching <paramref name="filter"/>.
