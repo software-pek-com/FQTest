@@ -25,9 +25,16 @@ namespace Tests.Services
 
         #region Helpers
 
+        private AppSettings CreateAppSettings()
+        {
+            return new AppSettings { DbUrl = "UnitTests", DbName = "MoWebAppDB" };
+        }
+
         private ConfigureMongoDbIndexesService CreateTarget()
         {
-            return new ConfigureMongoDbIndexesService(optionsMock.Object, clientMock.Object, loggerMock.Object);
+            var serviceProvider = CreateServiceProvider();
+            var target = serviceProvider.GetService<IHostedService>() as ConfigureMongoDbIndexesService;
+            return target;
         }
 
         private ServiceProvider CreateServiceProvider()
@@ -62,7 +69,7 @@ namespace Tests.Services
         public void Setup()
         {
             optionsMock = new Mock<IOptions<AppSettings>>();
-            optionsMock.SetupGet(s => s.Value).Returns(new AppSettings { DbUrl = "mongodb://localhost:27017", DbName = "MoWebAppDB" });
+            optionsMock.SetupGet(s => s.Value).Returns(CreateAppSettings());
 
             clientMock = new Mock<IMongoClient>();
             loggerMock = new Mock<ILogger<ConfigureMongoDbIndexesService>>();
@@ -88,23 +95,25 @@ namespace Tests.Services
                 .Returns(Task.FromResult("OK"));
         }
 
+        #region Constructor
+
         [Test]
         public void ConfigureMongoDbIndexesService_Can_Construct()
         {
-            var target = CreateTarget();
+            var target = new ConfigureMongoDbIndexesService(optionsMock.Object, clientMock.Object, loggerMock.Object);
 
             Assert.IsNotNull(target);
         }
 
         [Test]
-        public void ConfigureMongoDbIndexesService_Cannot_Construct_With_Null_AppSettings()
+        public void ConfigureMongoDbIndexesService_Cannot_Construct_With_Null_Options()
         {
             Assert.Throws<ArgumentNullException>(
                 () => new ConfigureMongoDbIndexesService(null, clientMock.Object, loggerMock.Object));
         }
 
         [Test]
-        public void ConfigureMongoDbIndexesService_Cannot_Construct_With_Null_MongoClient()
+        public void ConfigureMongoDbIndexesService_Cannot_Construct_With_Null_Client()
         {
             Assert.Throws<ArgumentNullException>(
                 () => new ConfigureMongoDbIndexesService(optionsMock.Object, null, loggerMock.Object));
@@ -117,11 +126,12 @@ namespace Tests.Services
                 () => new ConfigureMongoDbIndexesService(optionsMock.Object, clientMock.Object, null));
         }
 
+        #endregion
+
         [Test]
         public async Task ConfigureMongoDbIndexesService_Executes_Task()
         {
-            var serviceProvider = CreateServiceProvider();
-            var target = serviceProvider.GetService<IHostedService>() as ConfigureMongoDbIndexesService;
+            var target = CreateTarget();
             var task = target.StartAsync(CancellationToken.None);
             await task;
 
@@ -140,6 +150,25 @@ namespace Tests.Services
             indexManagerMock.Verify(
                 s => s.CreateOneAsync(It.IsAny<CreateIndexModel<User>>(), null, CancellationToken.None),
                 Times.Once);
+        }
+
+        [Test]
+        public async Task ConfigureMongoDbIndexesService_Fails_To_Execute_Task()
+        {
+            Assert.ThrowsAsync<MongoClientException>(async () =>
+            {
+                // Override [Setup] above.
+                clientMock = new Mock<IMongoClient>();
+                clientMock
+                    .Setup(s => s.GetDatabase(It.IsAny<string>(), null))
+                    .Throws(new MongoClientException("Something bad happened"));
+
+                var target = CreateTarget();
+                var task = target.StartAsync(CancellationToken.None);
+                await task;
+
+                Assert.IsTrue(task.IsFaulted);
+            });
         }
     }
 }

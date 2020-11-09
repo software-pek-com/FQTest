@@ -31,6 +31,7 @@ namespace MoWebApp
 
             var appSettings = new AppSettings();
             settings.Bind(appSettings);
+
             services.AddSingleton<IMongoClient>(new MongoClient(appSettings.DbUrl));
             services.AddSingleton<IHostedService, ConfigureMongoDbIndexesService>();
             services.AddSingleton<IUserService, UserService>();
@@ -58,8 +59,6 @@ namespace MoWebApp
             {
                 app.UseDeveloperExceptionPage();
             }
-
-            app.UseHttpsRedirection();
 
             app.UseRouting();
 

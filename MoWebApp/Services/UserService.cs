@@ -1,10 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Configuration;
+﻿using System.Collections.Generic;
 using System.Linq;
 using AutoMapper;
-using Microsoft.AspNetCore.Mvc;
-using MongoDB.Bson;
+using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 using MoWebApp.Core;
@@ -18,17 +15,20 @@ namespace MoWebApp.Services
     /// </summary>
     public class UserService : IUserService
     {
+        private readonly AppSettings settings;
         private readonly IMongoClient client;
         private readonly IMapper mapper;
 
         /// <summary>
         /// Creates an instance of this class.
         /// </summary>
-        public UserService(IMongoClient client, IMapper mapper)
+        public UserService(IOptions<AppSettings> settings, IMongoClient client, IMapper mapper)
         {
+            Guard.ArgumentNotNull(settings, nameof(settings));
             Guard.ArgumentNotNull(client, nameof(client));
             Guard.ArgumentNotNull(mapper, nameof(mapper));
 
+            this.settings = settings.Value;
             this.client = client;
             this.mapper = mapper;
         }
@@ -61,14 +61,18 @@ namespace MoWebApp.Services
         /// <summary>
         /// Returns all <see cref="IEnumerable<UserDocument>">users</see> matching <paramref name="filter"/>.
         /// </summary>
+        /// <remarks>
+        /// <see cref="string.StartsWith"/> is used for matching.
+        /// </remarks>
         public IEnumerable<UserSummary> Find(UserSearchFilter filter, UserSearchOrderBy orderBy)
         {
             var queryable = GetUserQueryable();
 
             var results = queryable.Where(u =>
-                !string.IsNullOrEmpty(filter.FirstName) && u.FirstName.StartsWith(filter.FirstName)
-                || !string.IsNullOrEmpty(filter.LastName) && u.LastName.StartsWith(filter.LastName)
-                || filter.HasUserEverConnected && u.LastConnectionDate == null
+                (!string.IsNullOrEmpty(filter.FirstName) && u.FirstName.StartsWith(filter.FirstName))
+                || (!string.IsNullOrEmpty(filter.LastName) && u.LastName.StartsWith(filter.LastName))
+                || (filter.HasUserEverConnected && u.LastConnectionDate != null)
+                || (!filter.HasUserEverConnected && u.LastConnectionDate == null)
                 );
 
             if (orderBy.LastConnectionDate)
@@ -84,7 +88,7 @@ namespace MoWebApp.Services
                 results.OrderBy(u => u.LastName);
             }
 
-            var summary = results.Select(r => mapper.Map<UserSummary>(r));
+            var summary = results.ToList().Select(r => mapper.Map<UserSummary>(r));
             return summary;
         }
 
@@ -93,11 +97,9 @@ namespace MoWebApp.Services
         /// <remarks>
         /// Protected virtual for unit tests.
         /// </remarks>
-        //protected virtual IMongoQueryable<User> GetUserQueryable()
         protected virtual IQueryable<User> GetUserQueryable()
         {
-            var databaseName = (string)ConfigurationManager.GetSection("Database:Name");
-            var database = client.GetDatabase(databaseName);
+            var database = client.GetDatabase(settings.DbName);
 
             return database.GetCollection<User>(nameof(User)).AsQueryable();
         }

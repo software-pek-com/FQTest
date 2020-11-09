@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using MoWebApp.Core;
 using MoWebApp.Data;
+using MoWebApp.Documents;
 using MoWebApp.Services;
 
 namespace MoWebApp.Controllers
@@ -30,5 +31,23 @@ namespace MoWebApp.Controllers
         /// </summary>
         [HttpGet]
         public IEnumerable<User> Get() => service.GetAll();
+
+        [HttpPut]
+        [Route("find")]
+        public IEnumerable<UserSummary> Find(
+            [FromBody] UserSearchFilter filter,
+            [FromQuery(Name = "orderByLastName")] bool orderByLastName,
+            [FromQuery(Name = "orderByCreationDate")] bool orderByCreationDate,
+            [FromQuery(Name = "orderByLastConnectionDate")] bool orderByLastConnectionDate)
+        {
+            var orderBy = new UserSearchOrderBy
+            {
+                LastName = orderByLastName,
+                CreationDate = orderByCreationDate,
+                LastConnectionDate = orderByLastConnectionDate
+            };
+
+            return service.Find(filter, orderBy);
+        }
     }
 }

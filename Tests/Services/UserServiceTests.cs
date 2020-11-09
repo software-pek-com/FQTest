@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using AutoMapper;
+using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 using Moq;
+using MoWebApp;
 using MoWebApp.Data;
 using MoWebApp.Services;
 using Newtonsoft.Json.Linq;
@@ -13,6 +15,7 @@ namespace Tests.Services
 {
     public class UserServiceTests : TestBase
     {
+        private Mock<IOptions<AppSettings>> optionsMock;
         private Mock<IMongoClient> clientMock;
         private Mock<IMongoDatabase> databaseMock;
         private Mock<IMongoCollection<User>> collectionMock;
@@ -23,8 +26,8 @@ namespace Tests.Services
 
         private class UserServiceMock : UserService
         {
-            public UserServiceMock(IQueryable<User> users, IMongoClient client, IMapper mapper)
-                : base(client, mapper)
+            public UserServiceMock(IOptions<AppSettings> options, IQueryable<User> users, IMongoClient client, IMapper mapper)
+                : base(options, client, mapper)
             {
                 DataStore = users;
             }
@@ -37,14 +40,19 @@ namespace Tests.Services
             }
         }
 
+        private AppSettings CreateAppSettings()
+        {
+            return new AppSettings { DbUrl = "UnitTests", DbName = "MoWebAppDB" };
+        }
+
         private UserService CreateTarget()
         {
-            return new UserService(clientMock.Object, Mapper);
+            return new UserService(optionsMock.Object, clientMock.Object, Mapper);
         }
 
         private UserService CreateTarget(IEnumerable<User> dataStore)
         {
-            return new UserServiceMock(dataStore.AsQueryable(), clientMock.Object, Mapper);
+            return new UserServiceMock(optionsMock.Object, dataStore.AsQueryable(), clientMock.Object, Mapper);
         }
 
         #endregion
@@ -52,6 +60,9 @@ namespace Tests.Services
         [SetUp]
         public void Setup()
         {
+            optionsMock = new Mock<IOptions<AppSettings>>();
+            optionsMock.SetupGet(s => s.Value).Returns(CreateAppSettings());
+
             clientMock = new Mock<IMongoClient>();
             databaseMock = new Mock<IMongoDatabase>();
             collectionMock = new Mock<IMongoCollection<User>>();
@@ -65,6 +76,8 @@ namespace Tests.Services
                 .Returns(collectionMock.Object);
         }
 
+        #region Constructor
+
         [Test]
         public void UserService_Can_Construct()
         {
@@ -73,25 +86,25 @@ namespace Tests.Services
             Assert.IsNotNull(target);
         }
 
-
         [Test]
-        public void UserService_Cannot_Construct_With_Null_Client_And_Null_Mapper()
+        public void UserService_Cannot_Construct_With_Null_Options()
         {
-            Assert.Throws<ArgumentNullException>(() => new UserService(null, null));
+            Assert.Throws<ArgumentNullException>(() => new UserService(null, clientMock.Object, Mapper));
         }
 
         [Test]
         public void UserService_Cannot_Construct_With_Null_Client()
         {
-            Assert.Throws<ArgumentNullException>(() => new UserService(null, Mapper));
+            Assert.Throws<ArgumentNullException>(() => new UserService(optionsMock.Object, null, Mapper));
         }
 
         [Test]
         public void UserService_Cannot_Construct_With_Null_Mapper()
         {
-            Assert.Throws<ArgumentNullException>(() => new UserService(clientMock.Object, null));
+            Assert.Throws<ArgumentNullException>(() => new UserService(optionsMock.Object, clientMock.Object, null));
         }
 
+        #endregion
 
         #region IUserService
 
