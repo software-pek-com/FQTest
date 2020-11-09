@@ -9,11 +9,17 @@ using MoWebApp.Models;
 
 namespace MoWebApp.Services
 {
+    /// <summary>
+    /// Represents configuration of an index on <see cref="UserDocument.UserName"/> in the MongoDB database.
+    /// </summary>
     public class ConfigureMongoDbIndexesService : IHostedService
     {
         private readonly IMongoClient client;
         private readonly ILogger<ConfigureMongoDbIndexesService> logger;
 
+        /// <summary>
+        /// Creates an instance of this class.
+        /// </summary>
         public ConfigureMongoDbIndexesService(IMongoClient client, ILogger<ConfigureMongoDbIndexesService> logger)
         {
             Guard.ArgumentNotNull(client, nameof(client));
@@ -23,6 +29,9 @@ namespace MoWebApp.Services
             this.logger = logger;
         }
 
+        /// <summary>
+        /// Starts the task to create an index on <see cref="UserDocument.UserName"/> in the MongoDB database.
+        /// </summary>
         public async Task StartAsync(CancellationToken cancellationToken)
         {
             /// <see cref="UserDocument.UserName"/> requires a unique constraint.
@@ -40,6 +49,9 @@ namespace MoWebApp.Services
                 $"Created '{nameof(UserDocument.UserName)}' index on {nameof(UserDocument)}.");
         }
 
+        /// <summary>
+        /// Starts the task to create an index on <see cref="UserDocument.UserName"/> in the MongoDB database.
+        /// </summary>
         public Task StopAsync(CancellationToken cancellationToken)
             => Task.CompletedTask;
     }
