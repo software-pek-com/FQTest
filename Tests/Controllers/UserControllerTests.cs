@@ -38,5 +38,7 @@ namespace Tests.MoWebApp.Controllers
         {
             Assert.Throws<ArgumentNullException>(() => new UserController(null));
         }
+
+        /* Unit tests for other controller methods should be added here. */
     }
 }

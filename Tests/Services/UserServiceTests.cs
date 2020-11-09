@@ -124,6 +124,18 @@ namespace Tests.Services
             Assert.AreEqual(expectedId, result.Id);
         }
 
+        [Test]
+        public void UserService_Can_GetById_Fails()
+        {
+            var dataStore = new List<User>();
+            var expectedId = "filip";
+            var target = CreateTarget(dataStore);
+
+            Assert.Null(target.GetById(expectedId));
+        }
+
+        /* Unit tests for the Find method should be added here. */
+
         #endregion
 
     }
