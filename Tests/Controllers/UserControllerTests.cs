@@ -28,9 +28,9 @@ namespace Tests.MoWebApp.Controllers
         [Test]
         public void UserController_Can_Construct()
         {
-            var userController = CreateTarget();
+            var target = CreateTarget();
 
-            Assert.IsNotNull(userController);
+            Assert.IsNotNull(target);
         }
 
         [Test]

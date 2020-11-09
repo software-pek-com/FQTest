@@ -10,6 +10,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using MongoDB.Driver;
+using MoWebApp.Services;
 
 namespace MoWebApp
 {
@@ -26,6 +28,11 @@ namespace MoWebApp
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
+
+            var mongoClient = new MongoClient(Configuration["Database:ConnectionString"]);
+
+            services.AddSingleton<IMongoClient>(mongoClient);
+            services.AddHostedService<ConfigureMongoDbIndexesService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

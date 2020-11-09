@@ -6,6 +6,11 @@ namespace MoWebApp.Models
 {
     public class UserDocument
     {
+        public UserDocument()
+        {
+            Audit = new AuditElement();
+        }
+
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
         public string Id { get; set; }

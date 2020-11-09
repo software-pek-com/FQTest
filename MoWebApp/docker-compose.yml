@@ -1,0 +1,29 @@
+﻿version: '3'
+
+services:
+
+  webapp:
+    image: mowebapp:latest
+    ports:
+      - '5000:80'
+
+  webappdb:
+    image: mongo:latest
+    environment:
+      - MONGO_INITDB_DATABASE=MoWebAppDB
+      - MONGO_INITDB_ROOT_USERNAME=mowebapp
+      - MONGO_INITDB_ROOT_PASSWORD=s0m3s3cr3t
+    volumes:
+      - ./MongoDB/init-mongo.json:/docker-entrypoint-initdb.d/init-mongo.json
+      - ./volume-MoWebAppDB:/data/db
+    ports:
+      - '27017:27017'
+
+  eventbus:
+    image: rabbitmq:management
+    environment:
+      - RABBITMQ_DEFAULT_USER=mowebapp
+      - RABBITMQ_DEFAULT_PASS=s0m3s3cr3t
+    ports:
+      - 5672:5672
+      - 15672:15672

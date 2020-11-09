@@ -1,0 +1,12 @@
+db.createUser
+{
+  "user": "mowebapp",
+  "pwd": "s0m3s3cr3t",
+  "roles": [
+    {
+      "role": "readWrite",
+      "db": "MoWebAppDB"
+    }
+  ]
+}
+)
