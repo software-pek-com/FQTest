@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using MongoDB.Driver;
 using Moq;
 using MoWebApp.Models;
@@ -17,12 +16,24 @@ namespace Tests.Services
     {
         private Mock<IMongoClient> clientMock;
         private Mock<ILogger<ConfigureMongoDbIndexesService>> loggerMock;
+        private Mock<IMongoDatabase> databaseMock = new Mock<IMongoDatabase>();
+        private Mock<IMongoCollection<UserDocument>> collectionMock = new Mock<IMongoCollection<UserDocument>>();
+        private Mock<IMongoIndexManager<UserDocument>> indexManagerMock = new Mock<IMongoIndexManager<UserDocument>>();
 
         #region Helpers
 
         private ConfigureMongoDbIndexesService CreateTarget()
         {
             return new ConfigureMongoDbIndexesService(clientMock.Object, loggerMock.Object);
+        }
+
+        private ServiceProvider CreateServiceProvider()
+        {
+            var services = new ServiceCollection();
+            services.AddSingleton(loggerMock.Object);
+            services.AddSingleton(clientMock.Object);
+            services.AddHostedService<ConfigureMongoDbIndexesService>();
+            return services.BuildServiceProvider();
         }
 
         #endregion
@@ -32,6 +43,26 @@ namespace Tests.Services
         {
             clientMock = new Mock<IMongoClient>();
             loggerMock = new Mock<ILogger<ConfigureMongoDbIndexesService>>();
+            
+            databaseMock = new Mock<IMongoDatabase>();
+            collectionMock = new Mock<IMongoCollection<UserDocument>>();
+            indexManagerMock = new Mock<IMongoIndexManager<UserDocument>>();
+
+            clientMock
+                .Setup(s => s.GetDatabase(It.IsAny<string>(), null))
+                .Returns(databaseMock.Object);
+
+            databaseMock
+                .Setup(s => s.GetCollection<UserDocument>(nameof(UserDocument), null))
+                .Returns(collectionMock.Object);
+
+            collectionMock
+                .SetupGet(s => s.Indexes)
+                .Returns(indexManagerMock.Object);
+
+            indexManagerMock
+                .Setup(s => s.CreateOneAsync(It.IsAny<CreateIndexModel<UserDocument>>(), null, CancellationToken.None))
+                .Returns(Task.FromResult("OK"));
         }
 
         [Test]
@@ -59,46 +90,25 @@ namespace Tests.Services
         [Test]
         public async Task ConfigureMongoDbIndexesService_Executes_Task()
         {
-            Mock<IMongoDatabase> databaseMock = new Mock<IMongoDatabase>();
-            Mock<IMongoCollection<UserDocument>> collectionMock = new Mock<IMongoCollection<UserDocument>>();
-            Mock<IMongoIndexManager<UserDocument>> indexManagerMock = new Mock<IMongoIndexManager<UserDocument>>();
-
-            clientMock
-                .Setup(s => s.GetDatabase(It.IsAny<string>(), null))
-                .Returns(databaseMock.Object);
-
-            databaseMock
-                .Setup(s => s.GetCollection<UserDocument>(nameof(UserDocument), null))
-                .Returns(collectionMock.Object);
-
-            collectionMock
-                .SetupGet(s => s.Indexes)
-                .Returns(indexManagerMock.Object);
-
-            indexManagerMock
-                .Setup(s => s.CreateOneAsync(It.IsAny<CreateIndexModel<UserDocument>>(), null, CancellationToken.None))
-                .Returns(Task.FromResult("OK"));
-
-            var services = new ServiceCollection();
-            services.AddSingleton(loggerMock.Object);
-            services.AddSingleton(clientMock.Object);
-            services.AddHostedService<ConfigureMongoDbIndexesService>();
-            var serviceProvider = services.BuildServiceProvider();
-
-            var service = serviceProvider.GetService<IHostedService>() as ConfigureMongoDbIndexesService;
-
-            var task = service.StartAsync(CancellationToken.None);
+            var serviceProvider = CreateServiceProvider();
+            
+            var target = serviceProvider.GetService<IHostedService>() as ConfigureMongoDbIndexesService;
+            var task = target.StartAsync(CancellationToken.None);
             await task;
 
             await Task.Delay(1000);
+
             Assert.IsTrue(task.IsCompleted);
 
-            await service.StopAsync(CancellationToken.None);
+            await target.StopAsync(CancellationToken.None);
 
             clientMock.Verify(s => s.GetDatabase(It.IsAny<string>(), null), Times.Once);
-            databaseMock.Verify(s => s.GetCollection<UserDocument>(nameof(UserDocument), null), Times.Once);
+            databaseMock.Verify(
+                s => s.GetCollection<UserDocument>(nameof(UserDocument), null), Times.Once);
             collectionMock.VerifyGet(s => s.Indexes, Times.Once);
-            indexManagerMock.Verify(s => s.CreateOneAsync(It.IsAny<CreateIndexModel<UserDocument>>(), null, CancellationToken.None), Times.Once);
+            indexManagerMock.Verify(
+                s => s.CreateOneAsync(It.IsAny<CreateIndexModel<UserDocument>>(), null, CancellationToken.None),
+                Times.Once);
         }
     }
 }
