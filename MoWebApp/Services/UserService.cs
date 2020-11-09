@@ -75,15 +75,17 @@ namespace MoWebApp.Services
                 || (!filter.HasUserEverConnected && u.LastConnectionDate == null)
                 );
 
+            // Assuming the orderings are mutually exclusive.
+            // Any other logic would have to be defined at the requirements level.
             if (orderBy.LastConnectionDate)
             {
                 results.OrderBy(u => u.LastConnectionDate);
             }
-            if (orderBy.CreationDate)
+            else if (orderBy.CreationDate)
             {
                 results.OrderBy(u => u.Audit.CreationDate);
             }
-            if (orderBy.LastName)
+            else if (orderBy.LastName)
             {
                 results.OrderBy(u => u.LastName);
             }
