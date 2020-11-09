@@ -36,6 +36,19 @@ namespace Tests.Services
             return services.BuildServiceProvider();
         }
 
+        private static Mock<ILogger<T>> VerifyInformationWasLogged<T>(Mock<ILogger<T>> logger)
+        {
+            logger.Verify(
+                x => x.Log(
+                    It.Is<LogLevel>(l => l == LogLevel.Information),
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((v, t) => true),
+                    It.IsAny<Exception>(),
+                    It.Is<Func<It.IsAnyType, Exception, string>>((v, t) => true)));
+
+            return logger;
+        }
+
         #endregion
 
         [SetUp]
@@ -91,7 +104,6 @@ namespace Tests.Services
         public async Task ConfigureMongoDbIndexesService_Executes_Task()
         {
             var serviceProvider = CreateServiceProvider();
-            
             var target = serviceProvider.GetService<IHostedService>() as ConfigureMongoDbIndexesService;
             var task = target.StartAsync(CancellationToken.None);
             await task;
@@ -101,6 +113,8 @@ namespace Tests.Services
             Assert.IsTrue(task.IsCompleted);
 
             await target.StopAsync(CancellationToken.None);
+
+            VerifyInformationWasLogged(loggerMock);
 
             clientMock.Verify(s => s.GetDatabase(It.IsAny<string>(), null), Times.Once);
             databaseMock.Verify(
