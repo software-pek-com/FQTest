@@ -16,9 +16,9 @@ namespace Tests.Services
     {
         private Mock<IMongoClient> clientMock;
         private Mock<ILogger<ConfigureMongoDbIndexesService>> loggerMock;
-        private Mock<IMongoDatabase> databaseMock = new Mock<IMongoDatabase>();
-        private Mock<IMongoCollection<User>> collectionMock = new Mock<IMongoCollection<User>>();
-        private Mock<IMongoIndexManager<User>> indexManagerMock = new Mock<IMongoIndexManager<User>>();
+        private Mock<IMongoDatabase> databaseMock;
+        private Mock<IMongoCollection<User>> collectionMock;
+        private Mock<IMongoIndexManager<User>> indexManagerMock;
 
         #region Helpers
 
