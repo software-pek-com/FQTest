@@ -1,8 +1,8 @@
-﻿using System.Configuration;
-using System.Threading;
+﻿using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 using MoWebApp.Core;
 using MoWebApp.Data;
@@ -21,13 +21,13 @@ namespace MoWebApp.Services
         /// <summary>
         /// Creates an instance of this class.
         /// </summary>
-        public ConfigureMongoDbIndexesService(AppSettings settings, IMongoClient client, ILogger<ConfigureMongoDbIndexesService> logger)
+        public ConfigureMongoDbIndexesService(IOptions<AppSettings> settings, IMongoClient client, ILogger<ConfigureMongoDbIndexesService> logger)
         {
             Guard.ArgumentNotNull(settings, nameof(settings));
             Guard.ArgumentNotNull(client, nameof(client));
             Guard.ArgumentNotNull(logger, nameof(logger));
 
-            this.settings = settings;
+            this.settings = settings.Value;
             this.client = client;
             this.logger = logger;
         }

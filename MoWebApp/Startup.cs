@@ -25,12 +25,13 @@ namespace MoWebApp
         {
             services.AddOptions();
 
-            services.Configure<AppSettings>(Configuration.GetSection(nameof(AppSettings)));
+            var settings = Configuration.GetSection(nameof(AppSettings));
+            services.Configure<AppSettings>(settings);
             services.AddSingleton(Configuration);
 
-            var databaseUrl = Configuration.GetConnectionString("DbUrl");
-
-            services.AddSingleton<IMongoClient>(new MongoClient(databaseUrl));
+            var appSettings = new AppSettings();
+            settings.Bind(appSettings);
+            services.AddSingleton<IMongoClient>(new MongoClient(appSettings.DbUrl));
             services.AddSingleton<IHostedService, ConfigureMongoDbIndexesService>();
             services.AddSingleton<IUserService, UserService>();
 

@@ -1,10 +1,10 @@
 ﻿using System;
-using System.Configuration.Internal;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 using Moq;
 using MoWebApp;
@@ -16,6 +16,7 @@ namespace Tests.Services
 {
     public class ConfigureMongoDbIndexesServiceTests
     {
+        private Mock<IOptions<AppSettings>> optionsMock;
         private Mock<IMongoClient> clientMock;
         private Mock<ILogger<ConfigureMongoDbIndexesService>> loggerMock;
         private Mock<IMongoDatabase> databaseMock;
@@ -26,18 +27,19 @@ namespace Tests.Services
 
         private ConfigureMongoDbIndexesService CreateTarget()
         {
-            var settings = new AppSettings { DbUrl = "mongodb://localhost:27017", DbName = "MoWebAppDB" };
-            return new ConfigureMongoDbIndexesService(settings, clientMock.Object, loggerMock.Object);
+            return new ConfigureMongoDbIndexesService(optionsMock.Object, clientMock.Object, loggerMock.Object);
         }
 
         private ServiceProvider CreateServiceProvider()
         {
             var services = new ServiceCollection();
 
-            services.AddSingleton(new AppSettings { DbUrl = "mongodb://localhost:27017", DbName = "MoWebAppDB" });
+            services.AddSingleton(optionsMock.Object);
             services.AddSingleton(loggerMock.Object);
             services.AddSingleton(clientMock.Object);
+            
             services.AddHostedService<ConfigureMongoDbIndexesService>();
+
             return services.BuildServiceProvider();
         }
 
@@ -59,6 +61,9 @@ namespace Tests.Services
         [SetUp]
         public void Setup()
         {
+            optionsMock = new Mock<IOptions<AppSettings>>();
+            optionsMock.SetupGet(s => s.Value).Returns(new AppSettings { DbUrl = "mongodb://localhost:27017", DbName = "MoWebAppDB" });
+
             clientMock = new Mock<IMongoClient>();
             loggerMock = new Mock<ILogger<ConfigureMongoDbIndexesService>>();
             
@@ -102,14 +107,14 @@ namespace Tests.Services
         public void ConfigureMongoDbIndexesService_Cannot_Construct_With_Null_MongoClient()
         {
             Assert.Throws<ArgumentNullException>(
-                () => new ConfigureMongoDbIndexesService(new AppSettings(), null, loggerMock.Object));
+                () => new ConfigureMongoDbIndexesService(optionsMock.Object, null, loggerMock.Object));
         }
 
         [Test]
         public void ConfigureMongoDbIndexesService_Cannot_Construct_With_Null_Logger()
         {
             Assert.Throws<ArgumentNullException>(
-                () => new ConfigureMongoDbIndexesService(new AppSettings(), clientMock.Object, null));
+                () => new ConfigureMongoDbIndexesService(optionsMock.Object, clientMock.Object, null));
         }
 
         [Test]
