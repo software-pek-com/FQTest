@@ -90,7 +90,11 @@ namespace MoWebApp.Services
 
         #region Private
 
-        private IMongoQueryable<User> GetUserQueryable()
+        /// <remarks>
+        /// Protected virtual for unit tests.
+        /// </remarks>
+        //protected virtual IMongoQueryable<User> GetUserQueryable()
+        protected virtual IQueryable<User> GetUserQueryable()
         {
             var databaseName = (string)ConfigurationManager.GetSection("Database:Name");
             var database = client.GetDatabase(databaseName);

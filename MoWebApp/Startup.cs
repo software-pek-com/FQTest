@@ -23,7 +23,14 @@ namespace MoWebApp
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddSingleton<IMongoClient>(new MongoClient(Configuration["Database:ConnectionString"]));
+            services.AddOptions();
+
+            services.Configure<AppSettings>(Configuration.GetSection(nameof(AppSettings)));
+            services.AddSingleton(Configuration);
+
+            var databaseUrl = Configuration.GetConnectionString("DbUrl");
+
+            services.AddSingleton<IMongoClient>(new MongoClient(databaseUrl));
             services.AddSingleton<IHostedService, ConfigureMongoDbIndexesService>();
             services.AddSingleton<IUserService, UserService>();
 

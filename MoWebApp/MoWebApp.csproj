@@ -7,6 +7,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="volume-MoWebAppDB\**" />
+    <Content Remove="volume-MoWebAppDB\**" />
+    <EmbeddedResource Remove="volume-MoWebAppDB\**" />
+    <None Remove="volume-MoWebAppDB\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="AutoMapper" Version="10.1.1" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.10.9" />
     <PackageReference Include="MongoDB.Driver" Version="2.11.4" />

@@ -1,8 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using AutoMapper;
 using MongoDB.Driver;
 using Moq;
 using MoWebApp.Data;
 using MoWebApp.Services;
+using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 
 namespace Tests.Services
@@ -17,9 +21,30 @@ namespace Tests.Services
 
         #region Helpers
 
+        private class UserServiceMock : UserService
+        {
+            public UserServiceMock(IQueryable<User> users, IMongoClient client, IMapper mapper)
+                : base(client, mapper)
+            {
+                DataStore = users;
+            }
+
+            public IQueryable<User> DataStore { get; private set; }
+
+            protected override IQueryable<User> GetUserQueryable()
+            {
+                return DataStore;
+            }
+        }
+
         private UserService CreateTarget()
         {
             return new UserService(clientMock.Object, Mapper);
+        }
+
+        private UserService CreateTarget(IEnumerable<User> dataStore)
+        {
+            return new UserServiceMock(dataStore.AsQueryable(), clientMock.Object, Mapper);
         }
 
         #endregion
@@ -73,9 +98,17 @@ namespace Tests.Services
         [Test]
         public void UserService_Can_GetById()
         {
-            var target = CreateTarget();
+            var dataStore = new List<User>
+            {
+                new User { Id = "filip", FirstName = "Filip", LastName = "Fodemski" }
+            };
+            var expectedId = "filip";
+            var target = CreateTarget(dataStore);
 
-            Assert.Throws<NotImplementedException>(() => target.GetById("abc"));
+            var result = target.GetById(expectedId);
+
+            Assert.NotNull(result);
+            Assert.AreEqual(expectedId, result.Id);
         }
 
         #endregion

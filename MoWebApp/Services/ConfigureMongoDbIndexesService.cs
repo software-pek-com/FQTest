@@ -14,17 +14,20 @@ namespace MoWebApp.Services
     /// </summary>
     public class ConfigureMongoDbIndexesService : IHostedService
     {
+        private readonly AppSettings settings;
         private readonly IMongoClient client;
         private readonly ILogger<ConfigureMongoDbIndexesService> logger;
 
         /// <summary>
         /// Creates an instance of this class.
         /// </summary>
-        public ConfigureMongoDbIndexesService(IMongoClient client, ILogger<ConfigureMongoDbIndexesService> logger)
+        public ConfigureMongoDbIndexesService(AppSettings settings, IMongoClient client, ILogger<ConfigureMongoDbIndexesService> logger)
         {
+            Guard.ArgumentNotNull(settings, nameof(settings));
             Guard.ArgumentNotNull(client, nameof(client));
             Guard.ArgumentNotNull(logger, nameof(logger));
 
+            this.settings = settings;
             this.client = client;
             this.logger = logger;
         }
@@ -39,8 +42,7 @@ namespace MoWebApp.Services
             var indexOptions = new CreateIndexOptions { Unique = true };
             var modelIndex = new CreateIndexModel<User>(keys, indexOptions);
 
-            var databaseName = (string)ConfigurationManager.GetSection("Database:Name");
-            var database = client.GetDatabase(databaseName);
+            var database = client.GetDatabase(settings.DbName);
 
             var collection = database.GetCollection<User>(nameof(User));
             await collection.Indexes.CreateOneAsync(modelIndex);

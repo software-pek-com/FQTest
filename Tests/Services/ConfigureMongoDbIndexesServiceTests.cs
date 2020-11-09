@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Configuration.Internal;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
@@ -6,6 +7,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using Moq;
+using MoWebApp;
 using MoWebApp.Data;
 using MoWebApp.Services;
 using NUnit.Framework;
@@ -24,12 +26,15 @@ namespace Tests.Services
 
         private ConfigureMongoDbIndexesService CreateTarget()
         {
-            return new ConfigureMongoDbIndexesService(clientMock.Object, loggerMock.Object);
+            var settings = new AppSettings { DbUrl = "mongodb://localhost:27017", DbName = "MoWebAppDB" };
+            return new ConfigureMongoDbIndexesService(settings, clientMock.Object, loggerMock.Object);
         }
 
         private ServiceProvider CreateServiceProvider()
         {
             var services = new ServiceCollection();
+
+            services.AddSingleton(new AppSettings { DbUrl = "mongodb://localhost:27017", DbName = "MoWebAppDB" });
             services.AddSingleton(loggerMock.Object);
             services.AddSingleton(clientMock.Object);
             services.AddHostedService<ConfigureMongoDbIndexesService>();
@@ -87,17 +92,24 @@ namespace Tests.Services
         }
 
         [Test]
+        public void ConfigureMongoDbIndexesService_Cannot_Construct_With_Null_AppSettings()
+        {
+            Assert.Throws<ArgumentNullException>(
+                () => new ConfigureMongoDbIndexesService(null, clientMock.Object, loggerMock.Object));
+        }
+
+        [Test]
         public void ConfigureMongoDbIndexesService_Cannot_Construct_With_Null_MongoClient()
         {
             Assert.Throws<ArgumentNullException>(
-                () => new ConfigureMongoDbIndexesService(null, loggerMock.Object));
+                () => new ConfigureMongoDbIndexesService(new AppSettings(), null, loggerMock.Object));
         }
 
         [Test]
         public void ConfigureMongoDbIndexesService_Cannot_Construct_With_Null_Logger()
         {
             Assert.Throws<ArgumentNullException>(
-                () => new ConfigureMongoDbIndexesService(clientMock.Object, null));
+                () => new ConfigureMongoDbIndexesService(new AppSettings(), clientMock.Object, null));
         }
 
         [Test]
