@@ -39,6 +39,7 @@ namespace MoWebApp
             var mapper = ConfigureMapper();
             services.AddSingleton(mapper);
 
+            services.AddHttpContextAccessor();
             services.AddControllers();
         }
 
@@ -47,6 +48,7 @@ namespace MoWebApp
             var mapperConfig = new MapperConfiguration(cfg => {
                 cfg.CreateMap<User, UserDetails>();
                 cfg.CreateMap<User, UserSummary>();
+                cfg.CreateMap<UserDetails, User>();
             });
 
             return mapperConfig.CreateMapper();

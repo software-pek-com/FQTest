@@ -12,7 +12,20 @@ namespace MoWebApp.Services
         /// <summary>
         /// Returns all <see cref="IEnumerable<UserDocument>">users</see>.
         /// </summary>
+        /// <remarks>
+        /// Leaving this method in for development and debugging.
+        /// </remarks>
         IEnumerable<User> GetAll();
+
+        /// <summary>
+        /// Creates a new <paramref name="user"/>.
+        /// </summary>
+        void Create(UserDetails user);
+
+        /// <summary>
+        /// Updates the <paramref name="user"/>.
+        /// </summary>
+        void Update(UserDetails user);
 
         /// <summary>
         /// Returns all <see cref="IEnumerable<UserDocument>">users</see>.

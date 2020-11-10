@@ -29,8 +29,27 @@ namespace MoWebApp.Controllers
         /// <summary>
         /// Returns all known <see cref="IEnumerable<UserDocument>">users</see>.
         /// </summary>
+        /// <remarks>
+        /// Leaving this method in for development and debugging.
+        /// </remarks>
         [HttpGet]
         public IEnumerable<User> Get() => service.GetAll();
+
+        [HttpPost]
+        public void Create(UserDetails user)
+        {
+            Guard.ArgumentNotNull(user, nameof(user));
+
+            service.Create(user);
+        }
+
+        [HttpPut]
+        public void Update(UserDetails user)
+        {
+            Guard.ArgumentNotNull(user, nameof(user));
+
+            service.Update(user);
+        }
 
         [HttpPut]
         [Route("find")]

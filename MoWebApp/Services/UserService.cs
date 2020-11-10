@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Security.Claims;
 using System.Threading;
 using AutoMapper;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
@@ -18,6 +20,7 @@ namespace MoWebApp.Services
     /// </summary>
     public class UserService : IUserService
     {
+        private readonly IHttpContextAccessor httpContextAccessor;
         private readonly AppSettings settings;
         private readonly IMongoClient client;
         private readonly IMapper mapper;
@@ -25,12 +28,14 @@ namespace MoWebApp.Services
         /// <summary>
         /// Creates an instance of this class.
         /// </summary>
-        public UserService(IOptions<AppSettings> settings, IMongoClient client, IMapper mapper)
+        public UserService(IHttpContextAccessor httpContextAccessor, IOptions<AppSettings> settings, IMongoClient client, IMapper mapper)
         {
+            Guard.ArgumentNotNull(httpContextAccessor, nameof(httpContextAccessor));
             Guard.ArgumentNotNull(settings, nameof(settings));
             Guard.ArgumentNotNull(client, nameof(client));
             Guard.ArgumentNotNull(mapper, nameof(mapper));
 
+            this.httpContextAccessor = httpContextAccessor;
             this.settings = settings.Value;
             this.client = client;
             this.mapper = mapper;
@@ -41,10 +46,55 @@ namespace MoWebApp.Services
         /// <summary>
         /// Returns all known <see cref="IEnumerable<UserDocument>">users</see>.
         /// </summary>
+        /// <remarks>
+        /// Leaving this method in for development and debugging.
+        /// </remarks>
         public IEnumerable<User> GetAll()
         {
             var collection = AsCollection();
             return collection.Find(_ => true).ToList();
+        }
+
+        /// <summary>
+        /// Creates a new <paramref name="user"/>.
+        /// </summary>
+        public void Create(UserDetails user)
+        {
+            Guard.ArgumentNotNull(user, nameof(user));
+
+            var collection = AsCollection();
+
+            var userData = mapper.Map<User>(user);
+
+            userData.Audit.CreationDate = DateTime.UtcNow;
+            userData.Audit.CreationUser = GetCurrentUserName();
+
+            collection.InsertOne(userData);
+        }
+
+        /// <summary>
+        /// Updates the <paramref name="user"/>.
+        /// </summary>
+        public void Update(UserDetails user)
+        {
+            Guard.ArgumentNotNull(user, nameof(user));
+
+            var id = user.Id;
+            if (string.IsNullOrEmpty(id))
+            {
+                throw new ArgumentException("User Id cannot be null or empty.");
+            }
+
+            var collection = AsCollection();
+            var currentData = collection.Find(u => u.Id == id).First();
+
+            var updateData = mapper.Map<User>(user);
+            updateData.Audit.CreationDate = currentData.Audit.CreationDate;
+            updateData.Audit.CreationUser = currentData.Audit.CreationUser;
+            updateData.Audit.LastUpdateDate = DateTime.UtcNow;
+            updateData.Audit.LastUpdateUser = GetCurrentUserName();
+
+            var result = collection.ReplaceOne(u => u.Id == id, updateData);
         }
 
         /// <summary>
@@ -124,6 +174,16 @@ namespace MoWebApp.Services
         #endregion
 
         #region Private
+
+        /// <summary>
+        /// Authentication is not enabled so we do not have the current user's Identity/Name.
+        /// Normally, current user's Identity is part of the context.
+        /// </summary>
+        private string GetCurrentUserName()
+        {
+            return "admin";
+            //return httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier).Value;
+        }
 
         /// <remarks>
         /// Protected virtual for unit tests.
