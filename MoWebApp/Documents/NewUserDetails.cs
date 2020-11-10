@@ -6,6 +6,11 @@
     public class NewUserDetails
     {
         /// <summary>
+        /// Returns the id.
+        /// </summary>
+        public string Id { get; set; }
+
+        /// <summary>
         /// Returns the first name.
         /// </summary>
         public string FirstName { get; set; }

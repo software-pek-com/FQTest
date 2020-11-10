@@ -1,9 +1,11 @@
 using System;
+using System.IO;
 using AutoMapper;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 using MongoDB.Driver;
 using MoWebApp.Data;
@@ -69,6 +71,19 @@ namespace MoWebApp
             {
                 app.UseDeveloperExceptionPage();
             }
+
+            var settings = Configuration.GetSection(nameof(AppSettings));
+            var appSettings = new AppSettings();
+            settings.Bind(appSettings);
+
+            //// using Microsoft.Extensions.FileProviders;
+            //// using System.IO;
+            //app.UseStaticFiles(new StaticFileOptions
+            //{
+            //    FileProvider = new PhysicalFileProvider(
+            //        Path.Combine(env.ContentRootPath, appSettings.WelcomeMessageFolder)),
+            //    RequestPath = "/" + appSettings.WelcomeMessageFolder
+            //});
 
             app.UseRouting();
 

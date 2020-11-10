@@ -77,6 +77,8 @@ namespace MoWebApp.Services
 
             collection.InsertOne(userData);
 
+            user.Id = userData.Id;
+
             PublishToEventBus(user);
         }
 
@@ -88,10 +90,6 @@ namespace MoWebApp.Services
             using (var connection = factory.CreateConnection())
             using (var channel = connection.CreateModel())
             {
-                //channel.ExchangeDeclare(exchange: EventBusNames.NewUsers, type: ExchangeType.Fanout);
-                //channel.QueueDeclare(queue: queueName);
-                //channel.QueueBind(queue: queueName, exchange: EventBusNames.NewUsers, routingKey: "");
-
                 channel.QueueDeclare(
                     queue: settings.EventBusQueue,
                     durable: false,
@@ -101,6 +99,7 @@ namespace MoWebApp.Services
 
                 var userDetails = new NewUserDetails
                 {
+                    Id = user.Id,
                     FirstName = user.FirstName,
                     LastName = user.LastName,
                     LoginUrl = settings.LoginUrl

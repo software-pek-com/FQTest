@@ -20,7 +20,7 @@ namespace Tests.Services
 {
     public class UserServiceTests : TestBase
     {
-        private IConnectionFactory connectionFactory;
+        private Mock<IConnectionFactory> connectionFactoryMock;
         private Mock<IHttpContextAccessor> httpContextAccessorMock;
         private Mock<IOptions<AppSettings>> optionsMock;
         private Mock<IMongoClient> clientMock;
@@ -84,7 +84,7 @@ namespace Tests.Services
         private UserService CreateTarget()
         {
             return new UserService(
-                connectionFactory,
+                connectionFactoryMock.Object,
                 httpContextAccessorMock.Object,
                 optionsMock.Object,
                 clientMock.Object,
@@ -94,7 +94,7 @@ namespace Tests.Services
         private UserServiceMock CreateTarget(IEnumerable<User> dataStore)
         {
             return new UserServiceMock(
-                connectionFactory,
+                connectionFactoryMock.Object,
                 httpContextAccessorMock.Object,
                 optionsMock.Object,
                 dataStore.AsQueryable(),
@@ -106,7 +106,7 @@ namespace Tests.Services
         private UserServiceMock CreateTarget(Mock<IMongoCollection<User>> collectionMock)
         {
             return new UserServiceMock(
-                connectionFactory,
+                connectionFactoryMock.Object,
                 httpContextAccessorMock.Object,
                 optionsMock.Object,
                 collectionMock,
@@ -119,6 +119,8 @@ namespace Tests.Services
         [SetUp]
         public void Setup()
         {
+            connectionFactoryMock = new Mock<IConnectionFactory>();
+
             optionsMock = new Mock<IOptions<AppSettings>>();
             optionsMock.SetupGet(s => s.Value).Returns(CreateAppSettings());
 
@@ -155,25 +157,25 @@ namespace Tests.Services
         [Test]
         public void UserService_Cannot_Construct_With_Null_HttpContextAccessor()
         {
-            Assert.Throws<ArgumentNullException>(() => new UserService(connectionFactory, null, optionsMock.Object, clientMock.Object, Mapper));
+            Assert.Throws<ArgumentNullException>(() => new UserService(connectionFactoryMock.Object, null, optionsMock.Object, clientMock.Object, Mapper));
         }
 
         [Test]
         public void UserService_Cannot_Construct_With_Null_Options()
         {
-            Assert.Throws<ArgumentNullException>(() => new UserService(connectionFactory, httpContextAccessorMock.Object, null, clientMock.Object, Mapper));
+            Assert.Throws<ArgumentNullException>(() => new UserService(connectionFactoryMock.Object, httpContextAccessorMock.Object, null, clientMock.Object, Mapper));
         }
 
         [Test]
         public void UserService_Cannot_Construct_With_Null_Client()
         {
-            Assert.Throws<ArgumentNullException>(() => new UserService(connectionFactory, httpContextAccessorMock.Object, optionsMock.Object, null, Mapper));
+            Assert.Throws<ArgumentNullException>(() => new UserService(connectionFactoryMock.Object, httpContextAccessorMock.Object, optionsMock.Object, null, Mapper));
         }
 
         [Test]
         public void UserService_Cannot_Construct_With_Null_Mapper()
         {
-            Assert.Throws<ArgumentNullException>(() => new UserService(connectionFactory, httpContextAccessorMock.Object, optionsMock.Object, clientMock.Object, null));
+            Assert.Throws<ArgumentNullException>(() => new UserService(connectionFactoryMock.Object, httpContextAccessorMock.Object, optionsMock.Object, clientMock.Object, null));
         }
 
         #endregion
