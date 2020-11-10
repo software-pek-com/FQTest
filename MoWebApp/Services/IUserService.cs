@@ -23,5 +23,10 @@ namespace MoWebApp.Services
         /// Returns all <see cref="IEnumerable<UserDocument>">users</see> matching <paramref name="filter"/>.
         /// </summary>
         IEnumerable<UserSummary> Find(UserSearchFilter filter, UserSearchOrderBy orderBy);
+
+        /// <summary>
+        /// Deletes user with <paramref name="id"/>. Returns true if user deleted and false otherwise.
+        /// </summary>
+        bool Delete(string id);
     }
 }

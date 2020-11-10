@@ -1,12 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
+using System.Threading;
 using AutoMapper;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 using Moq;
 using MoWebApp;
 using MoWebApp.Data;
+using MoWebApp.Documents;
 using MoWebApp.Services;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
@@ -26,15 +29,29 @@ namespace Tests.Services
 
         private class UserServiceMock : UserService
         {
-            public UserServiceMock(IOptions<AppSettings> options, IQueryable<User> users, IMongoClient client, IMapper mapper)
+            private readonly Mock<IMongoCollection<User>> collectionMock;
+
+            public UserServiceMock(IOptions<AppSettings> options, IQueryable<User> users, Mock<IMongoCollection<User>> collectionMock, IMongoClient client, IMapper mapper)
                 : base(options, client, mapper)
             {
+                this.collectionMock = collectionMock;
                 DataStore = users;
+            }
+
+            public UserServiceMock(IOptions<AppSettings> options, Mock<IMongoCollection<User>> collectionMock, IMongoClient client, IMapper mapper)
+                : base(options, client, mapper)
+            {
+                this.collectionMock = collectionMock;
             }
 
             public IQueryable<User> DataStore { get; private set; }
 
-            protected override IQueryable<User> GetUserQueryable()
+            protected override IMongoCollection<User> AsCollection()
+            {
+                return collectionMock.Object;
+            }
+
+            protected override IQueryable<User> AsQueryable()
             {
                 return DataStore;
             }
@@ -50,9 +67,14 @@ namespace Tests.Services
             return new UserService(optionsMock.Object, clientMock.Object, Mapper);
         }
 
-        private UserService CreateTarget(IEnumerable<User> dataStore)
+        private UserServiceMock CreateTarget(IEnumerable<User> dataStore)
         {
-            return new UserServiceMock(optionsMock.Object, dataStore.AsQueryable(), clientMock.Object, Mapper);
+            return new UserServiceMock(optionsMock.Object, dataStore.AsQueryable(), collectionMock, clientMock.Object, Mapper);
+        }
+
+        private UserServiceMock CreateTarget(Mock<IMongoCollection<User>> collectionMock)
+        {
+            return new UserServiceMock(optionsMock.Object, collectionMock, clientMock.Object, Mapper);
         }
 
         #endregion
@@ -109,7 +131,7 @@ namespace Tests.Services
         #region IUserService
 
         [Test]
-        public void UserService_Can_GetById()
+        public void UserService_GetById()
         {
             var dataStore = new List<User>
             {
@@ -125,13 +147,117 @@ namespace Tests.Services
         }
 
         [Test]
-        public void UserService_Can_GetById_Fails()
+        public void UserService_GetById_Throws_When_Id_Null()
+        {
+            var dataStore = new List<User>
+            {
+                new User { Id = "filip", FirstName = "Filip", LastName = "Fodemski" }
+            };
+            var target = CreateTarget(dataStore);
+
+            Assert.Throws<ArgumentNullException>(() => target.GetById(null));
+        }
+
+        [Test]
+        public void UserService_GetById_Throws_When_Id_Empty()
+        {
+            var dataStore = new List<User>
+            {
+                new User { Id = "filip", FirstName = "Filip", LastName = "Fodemski" }
+            };
+            var target = CreateTarget(dataStore);
+
+            Assert.Throws<ArgumentException>(() => target.GetById(""));
+        }
+
+        [Test]
+        public void UserService_GetById_Returns_Null_When_Not_Found()
         {
             var dataStore = new List<User>();
             var expectedId = "filip";
             var target = CreateTarget(dataStore);
 
             Assert.Null(target.GetById(expectedId));
+        }
+
+        [Test]
+        public void UserService_Delete()
+        {
+            var expectedId = "filip";
+            
+            collectionMock
+                .Setup(s => s.DeleteOne(It.IsAny<FilterDefinition<User>>(), CancellationToken.None))
+                .Returns(new DeleteResult.Acknowledged(1));
+
+            var target = CreateTarget(collectionMock);
+
+            target.Delete(expectedId);
+
+            collectionMock.Verify(s => s.DeleteOne(It.IsAny<FilterDefinition<User>>(), CancellationToken.None), Times.Once);
+        }
+
+        [Test]
+        public void UserService_Delete_Throws_When_Id_Null()
+        {
+            collectionMock
+                .Setup(s => s.DeleteOne(It.IsAny<FilterDefinition<User>>(), CancellationToken.None))
+                .Returns(new DeleteResult.Acknowledged(1));
+
+            var target = CreateTarget(collectionMock);
+
+            Assert.Throws<ArgumentNullException>(() => target.Delete(null));
+        }
+
+        [Test]
+        public void UserService_Delete_Throws_When_Id_Empty()
+        {
+            collectionMock
+                .Setup(s => s.DeleteOne(It.IsAny<FilterDefinition<User>>(), CancellationToken.None))
+                .Returns(new DeleteResult.Acknowledged(1));
+
+            var target = CreateTarget(collectionMock);
+
+            Assert.Throws<ArgumentException>(() => target.Delete(""));
+        }
+
+        [Test]
+        public void UserService_Delete_Is_Silent_When_Id_Not_Found()
+        {
+            var expectedId = "filip";
+
+            collectionMock
+                .Setup(s => s.DeleteOne(It.IsAny<FilterDefinition<User>>(), CancellationToken.None))
+                .Returns(new DeleteResult.Acknowledged(0));
+
+            var target = CreateTarget(collectionMock);
+
+            Assert.False(target.Delete(expectedId));
+
+            collectionMock.Verify(s => s.DeleteOne(It.IsAny<FilterDefinition<User>>(), CancellationToken.None), Times.Once);
+        }
+
+        [Test]
+        public void UserService_Find_Throws_When_Filter_Null()
+        {
+            var dataStore = new List<User>
+            {
+                new User { Id = "filip", FirstName = "Filip", LastName = "Fodemski" }
+            };
+            var target = CreateTarget(dataStore);
+
+            Assert.Throws<ArgumentNullException>(() => target.Find(null, new UserSearchOrderBy()));
+        }
+
+        [Test]
+        public void UserService_Find_Throws_When_OrderBy_Null()
+        {
+            var dataStore = new List<User>
+            {
+                new User { Id = "filip", FirstName = "Filip", LastName = "Fodemski" }
+            };
+            var target = CreateTarget(dataStore);
+
+            Assert.Throws<ArgumentNullException>(() => target.Find(new UserSearchFilter(), null));
         }
 
         /* Unit tests for the Find method should be added here. */
