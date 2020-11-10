@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Security.Claims;
+using System.Text;
 using System.Threading;
 using AutoMapper;
 using Microsoft.AspNetCore.Http;
@@ -12,6 +12,8 @@ using MongoDB.Driver.Linq;
 using MoWebApp.Core;
 using MoWebApp.Data;
 using MoWebApp.Documents;
+using Newtonsoft.Json;
+using RabbitMQ.Client;
 
 namespace MoWebApp.Services
 {
@@ -20,21 +22,25 @@ namespace MoWebApp.Services
     /// </summary>
     public class UserService : IUserService
     {
+        private readonly IConnectionFactory factory;
         private readonly IHttpContextAccessor httpContextAccessor;
         private readonly AppSettings settings;
         private readonly IMongoClient client;
         private readonly IMapper mapper;
 
+
         /// <summary>
         /// Creates an instance of this class.
         /// </summary>
-        public UserService(IHttpContextAccessor httpContextAccessor, IOptions<AppSettings> settings, IMongoClient client, IMapper mapper)
+        public UserService(IConnectionFactory factory, IHttpContextAccessor httpContextAccessor, IOptions<AppSettings> settings, IMongoClient client, IMapper mapper)
         {
+            Guard.ArgumentNotNull(factory, nameof(factory));
             Guard.ArgumentNotNull(httpContextAccessor, nameof(httpContextAccessor));
             Guard.ArgumentNotNull(settings, nameof(settings));
             Guard.ArgumentNotNull(client, nameof(client));
             Guard.ArgumentNotNull(mapper, nameof(mapper));
 
+            this.factory = factory;
             this.httpContextAccessor = httpContextAccessor;
             this.settings = settings.Value;
             this.client = client;
@@ -70,6 +76,45 @@ namespace MoWebApp.Services
             userData.Audit.CreationUser = GetCurrentUserName();
 
             collection.InsertOne(userData);
+
+            PublishToEventBus(user);
+        }
+
+        private void PublishToEventBus(UserDetails user)
+        {
+            //Do your preparation (e.g. Start code) here
+            var queueName = settings.EventBusQueue;
+
+            using (var connection = factory.CreateConnection())
+            using (var channel = connection.CreateModel())
+            {
+                //channel.ExchangeDeclare(exchange: EventBusNames.NewUsers, type: ExchangeType.Fanout);
+                //channel.QueueDeclare(queue: queueName);
+                //channel.QueueBind(queue: queueName, exchange: EventBusNames.NewUsers, routingKey: "");
+
+                channel.QueueDeclare(
+                    queue: settings.EventBusQueue,
+                    durable: false,
+                    exclusive: false,
+                    autoDelete: false,
+                    arguments: null);
+
+                var userDetails = new NewUserDetails
+                {
+                    FirstName = user.FirstName,
+                    LastName = user.LastName,
+                    LoginUrl = settings.LoginUrl
+                };
+
+                var message = JsonConvert.SerializeObject(userDetails);
+                var body = Encoding.UTF8.GetBytes(message);
+
+                channel.BasicPublish(
+                    exchange: "",
+                    routingKey: settings.EventBusQueue,
+                    basicProperties: null,
+                    body: body);
+            }
         }
 
         /// <summary>

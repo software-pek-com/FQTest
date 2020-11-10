@@ -34,9 +34,12 @@ namespace MoWebApp
             var appSettings = new AppSettings();
             settings.Bind(appSettings);
 
+            services.AddSingleton<IConnectionFactory>(new ConnectionFactory { Uri = new Uri(appSettings.EventBusUrl) });
             services.AddSingleton<IMongoClient>(new MongoClient(appSettings.DbUrl));
-            services.AddSingleton<IHostedService, ConfigureMongoDbIndexesService>();
             services.AddSingleton<IUserService, UserService>();
+
+            services.AddHostedService<ConfigureMongoDbIndexesService>();
+            services.AddHostedService<UserCreationEventHandlerService>();
 
             var mapper = ConfigureMapper();
             services.AddSingleton(mapper);
