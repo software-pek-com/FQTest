@@ -75,6 +75,13 @@ namespace MoWebApp.Services
         /// <summary>
         /// Updates the <paramref name="user"/>.
         /// </summary>
+        /// <remarks>
+        /// This is not entirely correct implementation because we always replace
+        /// user data with what we get in <paramref name="user"/>. A correct implementation
+        /// (not done because of lack of time) would need to detect what in <paramref name="user"/>
+        /// has changed to ensure that it is correctly 'blended' with existing data (which is not being
+        /// updated).
+        /// </remarks>
         public void Update(UserDetails user)
         {
             Guard.ArgumentNotNull(user, nameof(user));
