@@ -1,3 +1,4 @@
+using System;
 using AutoMapper;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -8,6 +9,7 @@ using MongoDB.Driver;
 using MoWebApp.Data;
 using MoWebApp.Documents;
 using MoWebApp.Services;
+using RabbitMQ.Client;
 
 namespace MoWebApp
 {
@@ -38,6 +40,9 @@ namespace MoWebApp
 
             var mapper = ConfigureMapper();
             services.AddSingleton(mapper);
+
+            var factory = new ConnectionFactory { Uri = new Uri(appSettings.EventBusUrl) };
+            services.AddSingleton(factory);
 
             services.AddHttpContextAccessor();
             services.AddControllers();
