@@ -28,7 +28,6 @@ namespace MoWebApp.Services
         private readonly IMongoClient client;
         private readonly IMapper mapper;
 
-
         /// <summary>
         /// Creates an instance of this class.
         /// </summary>

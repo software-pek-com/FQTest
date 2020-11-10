@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Threading;
 using AutoMapper;
 using Microsoft.AspNetCore.Http;
@@ -12,7 +11,6 @@ using MoWebApp;
 using MoWebApp.Data;
 using MoWebApp.Documents;
 using MoWebApp.Services;
-using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using RabbitMQ.Client;
 
@@ -20,15 +18,6 @@ namespace Tests.Services
 {
     public class UserServiceTests : TestBase
     {
-        private Mock<IConnectionFactory> connectionFactoryMock;
-        private Mock<IHttpContextAccessor> httpContextAccessorMock;
-        private Mock<IOptions<AppSettings>> optionsMock;
-        private Mock<IMongoClient> clientMock;
-        private Mock<IMongoDatabase> databaseMock;
-        private Mock<IMongoCollection<User>> collectionMock;
-
-        public UserServiceTests() { }
-
         #region Helpers
 
         private class UserServiceMock : UserService
@@ -84,33 +73,33 @@ namespace Tests.Services
         private UserService CreateTarget()
         {
             return new UserService(
-                connectionFactoryMock.Object,
-                httpContextAccessorMock.Object,
-                optionsMock.Object,
-                clientMock.Object,
+                ConnectionFactory,
+                HttpContextAccessorMock.Object,
+                OptionsMock.Object,
+                ClientMock.Object,
                 Mapper);
         }
 
         private UserServiceMock CreateTarget(IEnumerable<User> dataStore)
         {
             return new UserServiceMock(
-                connectionFactoryMock.Object,
-                httpContextAccessorMock.Object,
-                optionsMock.Object,
+                ConnectionFactory,
+                HttpContextAccessorMock.Object,
+                OptionsMock.Object,
                 dataStore.AsQueryable(),
-                collectionMock,
-                clientMock.Object,
+                CollectionMock,
+                ClientMock.Object,
                 Mapper);
         }
 
         private UserServiceMock CreateTarget(Mock<IMongoCollection<User>> collectionMock)
         {
             return new UserServiceMock(
-                connectionFactoryMock.Object,
-                httpContextAccessorMock.Object,
-                optionsMock.Object,
+                ConnectionFactory,
+                HttpContextAccessorMock.Object,
+                OptionsMock.Object,
                 collectionMock,
-                clientMock.Object,
+                ClientMock.Object,
                 Mapper);
         }
 
@@ -119,23 +108,7 @@ namespace Tests.Services
         [SetUp]
         public void Setup()
         {
-            connectionFactoryMock = new Mock<IConnectionFactory>();
-
-            optionsMock = new Mock<IOptions<AppSettings>>();
-            optionsMock.SetupGet(s => s.Value).Returns(CreateAppSettings());
-
-            httpContextAccessorMock = new Mock<IHttpContextAccessor>();
-            clientMock = new Mock<IMongoClient>();
-            databaseMock = new Mock<IMongoDatabase>();
-            collectionMock = new Mock<IMongoCollection<User>>();
-
-            clientMock
-                .Setup(s => s.GetDatabase(It.IsAny<string>(), null))
-                .Returns(databaseMock.Object);
-
-            databaseMock
-                .Setup(s => s.GetCollection<User>(nameof(User), null))
-                .Returns(collectionMock.Object);
+            CreateServiceProvider();
         }
 
         #region Constructor
@@ -151,31 +124,31 @@ namespace Tests.Services
         [Test]
         public void UserService_Cannot_Construct_With_Null_ConnectionFactory()
         {
-            Assert.Throws<ArgumentNullException>(() => new UserService(null, httpContextAccessorMock.Object, optionsMock.Object, clientMock.Object, Mapper));
+            Assert.Throws<ArgumentNullException>(() => new UserService(null, HttpContextAccessorMock.Object, OptionsMock.Object, ClientMock.Object, Mapper));
         }
 
         [Test]
         public void UserService_Cannot_Construct_With_Null_HttpContextAccessor()
         {
-            Assert.Throws<ArgumentNullException>(() => new UserService(connectionFactoryMock.Object, null, optionsMock.Object, clientMock.Object, Mapper));
+            Assert.Throws<ArgumentNullException>(() => new UserService(ConnectionFactory, null, OptionsMock.Object, ClientMock.Object, Mapper));
         }
 
         [Test]
         public void UserService_Cannot_Construct_With_Null_Options()
         {
-            Assert.Throws<ArgumentNullException>(() => new UserService(connectionFactoryMock.Object, httpContextAccessorMock.Object, null, clientMock.Object, Mapper));
+            Assert.Throws<ArgumentNullException>(() => new UserService(ConnectionFactory, HttpContextAccessorMock.Object, null, ClientMock.Object, Mapper));
         }
 
         [Test]
         public void UserService_Cannot_Construct_With_Null_Client()
         {
-            Assert.Throws<ArgumentNullException>(() => new UserService(connectionFactoryMock.Object, httpContextAccessorMock.Object, optionsMock.Object, null, Mapper));
+            Assert.Throws<ArgumentNullException>(() => new UserService(ConnectionFactory, HttpContextAccessorMock.Object, OptionsMock.Object, null, Mapper));
         }
 
         [Test]
         public void UserService_Cannot_Construct_With_Null_Mapper()
         {
-            Assert.Throws<ArgumentNullException>(() => new UserService(connectionFactoryMock.Object, httpContextAccessorMock.Object, optionsMock.Object, clientMock.Object, null));
+            Assert.Throws<ArgumentNullException>(() => new UserService(ConnectionFactory, HttpContextAccessorMock.Object, OptionsMock.Object, ClientMock.Object, null));
         }
 
         #endregion
@@ -237,25 +210,25 @@ namespace Tests.Services
         {
             var expectedId = "filip";
             
-            collectionMock
+            CollectionMock
                 .Setup(s => s.DeleteOne(It.IsAny<FilterDefinition<User>>(), CancellationToken.None))
                 .Returns(new DeleteResult.Acknowledged(1));
 
-            var target = CreateTarget(collectionMock);
+            var target = CreateTarget(CollectionMock);
 
             target.Delete(expectedId);
 
-            collectionMock.Verify(s => s.DeleteOne(It.IsAny<FilterDefinition<User>>(), CancellationToken.None), Times.Once);
+            CollectionMock.Verify(s => s.DeleteOne(It.IsAny<FilterDefinition<User>>(), CancellationToken.None), Times.Once);
         }
 
         [Test]
         public void UserService_Delete_Throws_When_Id_Null()
         {
-            collectionMock
+            CollectionMock
                 .Setup(s => s.DeleteOne(It.IsAny<FilterDefinition<User>>(), CancellationToken.None))
                 .Returns(new DeleteResult.Acknowledged(1));
 
-            var target = CreateTarget(collectionMock);
+            var target = CreateTarget(CollectionMock);
 
             Assert.Throws<ArgumentNullException>(() => target.Delete(null));
         }
@@ -263,11 +236,11 @@ namespace Tests.Services
         [Test]
         public void UserService_Delete_Throws_When_Id_Empty()
         {
-            collectionMock
+            CollectionMock
                 .Setup(s => s.DeleteOne(It.IsAny<FilterDefinition<User>>(), CancellationToken.None))
                 .Returns(new DeleteResult.Acknowledged(1));
 
-            var target = CreateTarget(collectionMock);
+            var target = CreateTarget(CollectionMock);
 
             Assert.Throws<ArgumentException>(() => target.Delete(""));
         }
@@ -277,15 +250,15 @@ namespace Tests.Services
         {
             var expectedId = "filip";
 
-            collectionMock
+            CollectionMock
                 .Setup(s => s.DeleteOne(It.IsAny<FilterDefinition<User>>(), CancellationToken.None))
                 .Returns(new DeleteResult.Acknowledged(0));
 
-            var target = CreateTarget(collectionMock);
+            var target = CreateTarget(CollectionMock);
 
             Assert.False(target.Delete(expectedId));
 
-            collectionMock.Verify(s => s.DeleteOne(It.IsAny<FilterDefinition<User>>(), CancellationToken.None), Times.Once);
+            CollectionMock.Verify(s => s.DeleteOne(It.IsAny<FilterDefinition<User>>(), CancellationToken.None), Times.Once);
         }
 
         [Test]
